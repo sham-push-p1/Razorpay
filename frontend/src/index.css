@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap');
+
+:root {
+  /* --- Signature Razorpay Light & Clean Design Tokens --- */
+  --bg: #f5f8ff;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f8faff;
+  --bg-raised: #f1f5f9;
+  
+  --panel: #ffffff;
+  --panel-2: #f8fafc;
+  
+  --border: #e2e8f0;
+  --border-soft: #edf2f7;
+  --border-highlight: rgba(51, 117, 246, 0.35);
+  
+  --text-primary: #0c2340;
+  --text-secondary: #475569;
+  --text-dim: #94a3b8;
+
+  /* Razorpay Brand Blue & Accents */
+  --accent: #3375f6;
+  --accent-hover: #1d5ed8;
+  --accent-light: #eff6ff;
+  --accent-glow: rgba(51, 117, 246, 0.2);
+  --accent-glow-strong: rgba(51, 117, 246, 0.4);
+
+  --risk-approve: #10b981;
+  --risk-approve-dim: rgba(16, 185, 129, 0.1);
+  --risk-approve-glow: rgba(16, 185, 129, 0.25);
+  
+  --risk-stepup: #f59e0b;
+  --risk-stepup-dim: rgba(245, 158, 11, 0.1);
+  --risk-stepup-glow: rgba(245, 158, 11, 0.25);
+  
+  --risk-block: #ef4444;
+  --risk-block-dim: rgba(239, 68, 68, 0.1);
+  --risk-block-glow: rgba(239, 68, 68, 0.25);
+
+  --shadow-sm: 0 2px 8px rgba(12, 35, 64, 0.04);
+  --shadow-card: 0 8px 30px rgba(12, 35, 64, 0.06);
+  --shadow-hover: 0 14px 36px rgba(51, 117, 246, 0.12);
+
+  /* --- Typography --- */
+  --font-display: "Plus Jakarta Sans", sans-serif;
+  --font-body: "Plus Jakarta Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  font-family: var(--font-body);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #070d18;
+  --bg-surface: #0c1524;
+  --bg-card: #0d1a2d;
+  --bg-card-subtle: #091322;
+  --bg-raised: #142238;
+  
+  --panel: #0d1a2d;
+  --panel-2: #091322;
+  
+  --border: #1e293b;
+  --border-soft: #162032;
+  --border-highlight: rgba(51, 117, 246, 0.45);
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-dim: #64748b;
+
+  --accent-light: #172554;
+  --shadow-card: 0 8px 30px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #f5f8ff;
+  background-image:
+    radial-gradient(#c7d7f7 1px, transparent 1px),
+    linear-gradient(180deg, #edf4ff 0%, #f7faff 60%, #ffffff 100%);
+  background-size: 28px 28px, 100% 100%;
+  background-attachment: fixed;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(51, 117, 246, 0.18);
+  color: #3375f6;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 120ms ease;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.04);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(12, 35, 64, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(12, 35, 64, 0.3);
+}
