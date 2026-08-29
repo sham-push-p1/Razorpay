@@ -7,7 +7,9 @@ to provide calibrated 0-100 fraud risk probabilities and mathematically exact pe
 from typing import List, Dict, Tuple
 import numpy as np
 import xgboost as xgb
+from sklearn.model_selection import train_test_split
 from app.services.feature_service import FeatureVector
+from app.services.fraud_data_generator import generate_dataset
 
 
 FEATURE_NAMES = [
@@ -41,55 +43,61 @@ FEATURE_CODES = {
 }
 
 
-def _train_default_model() -> xgb.Booster:
-    """Pre-train an XGBoost fraud detector on realistic payment patterns with Tree-SHAP capability."""
-    np.random.seed(42)
-    n_samples = 4000
+_PARAMS = {
+    "max_depth": 4,
+    "eta": 0.1,
+    "objective": "binary:logistic",
+    "eval_metric": "logloss",
+    "seed": 42,
+}
 
-    # Normal user distribution
-    normal_ratio = np.random.uniform(0.5, 2.0, n_samples // 2)
-    normal_v90 = np.random.poisson(0.2, n_samples // 2)
-    normal_v300 = np.random.poisson(0.5, n_samples // 2)
-    normal_new_dev = np.random.binomial(1, 0.1, n_samples // 2)
-    normal_dev_acc = np.random.choice([1, 2], p=[0.9, 0.1], size=n_samples // 2)
-    normal_ip_usr = np.random.choice([1, 2], p=[0.85, 0.15], size=n_samples // 2)
-    normal_age = np.random.uniform(30, 700, n_samples // 2)
-    y_normal = np.zeros(n_samples // 2)
 
-    # Fraudulent transaction distribution (attacks: velocity bursts, fan-outs, amount spikes)
-    fraud_ratio = np.random.uniform(2.5, 12.0, n_samples // 2)
-    fraud_v90 = np.random.poisson(3.5, n_samples // 2)
-    fraud_v300 = np.random.poisson(6.0, n_samples // 2)
-    fraud_new_dev = np.random.binomial(1, 0.75, n_samples // 2)
-    fraud_dev_acc = np.random.choice([2, 4, 8, 12], p=[0.2, 0.3, 0.3, 0.2], size=n_samples // 2)
-    fraud_ip_usr = np.random.choice([2, 5, 10, 15], p=[0.2, 0.3, 0.3, 0.2], size=n_samples // 2)
-    fraud_age = np.random.uniform(0, 15, n_samples // 2)
-    y_fraud = np.ones(n_samples // 2)
-
-    X_normal = np.column_stack([
-        normal_ratio, normal_v90, normal_v300, normal_new_dev, normal_dev_acc, normal_ip_usr, normal_age
-    ])
-    X_fraud = np.column_stack([
-        fraud_ratio, fraud_v90, fraud_v300, fraud_new_dev, fraud_dev_acc, fraud_ip_usr, fraud_age
-    ])
-
-    X = np.vstack([X_normal, X_fraud])
-    y = np.concatenate([y_normal, y_fraud])
-
+def _fit(X: np.ndarray, y: np.ndarray) -> xgb.Booster:
     dtrain = xgb.DMatrix(X, label=y, feature_names=FEATURE_NAMES)
-    params = {
-        "max_depth": 4,
-        "eta": 0.1,
-        "objective": "binary:logistic",
-        "eval_metric": "logloss",
-        "seed": 42,
-    }
-    booster = xgb.train(params, dtrain, num_boost_round=50)
-    return booster
+    return xgb.train(_PARAMS, dtrain, num_boost_round=50)
 
 
-# Global singleton model instance
-_MODEL = _train_default_model()
+def _train_default_model(retrain_seed: int = 42) -> xgb.Booster:
+    """
+    Train (or retrain) the fraud detector on a fresh TRAIN split only.
+
+    The held-out set (_HELD_OUT_X/_Y/_AMOUNTS below) is generated once at
+    module load and is never touched here - it stays fixed so that
+    evaluation_service's benchmark is always measuring generalization to
+    genuinely unseen data, even across retrains triggered by drift_service.
+    """
+    X, y, _ = generate_dataset(n_samples=6400, seed=retrain_seed)
+    return _fit(X, y)
+
+
+# ---- One-time train/held-out split, shared by ml_engine and evaluation_service ----
+# 8000 samples total, 80/20 stratified split. The 20% held-out slice is never
+# used for training - by this model or any retrain - only for benchmarking.
+_ALL_X, _ALL_Y, _ALL_AMOUNTS = generate_dataset(n_samples=8000, seed=42)
+_idx = np.arange(len(_ALL_Y))
+_train_idx, _test_idx = train_test_split(
+    _idx, test_size=0.2, stratify=_ALL_Y, random_state=42
+)
+
+_HELD_OUT_X = _ALL_X[_test_idx]
+_HELD_OUT_Y = _ALL_Y[_test_idx]
+_HELD_OUT_AMOUNTS = _ALL_AMOUNTS[_test_idx]
+
+# Global singleton model instance - trained ONLY on the train split.
+_MODEL = _fit(_ALL_X[_train_idx], _ALL_Y[_train_idx])
+
+
+def get_held_out_set() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Returns (X, y, amounts) for the fixed, never-trained-on held-out set."""
+    return _HELD_OUT_X, _HELD_OUT_Y, _HELD_OUT_AMOUNTS
+
+
+def get_train_set() -> Tuple[np.ndarray, np.ndarray]:
+    """Returns (X, y) for the training split - used by services that need to
+    train a genuinely separate model (e.g. champion/challenger comparison)
+    on the exact same data the production model was trained on, so any
+    comparison against it is apples-to-apples."""
+    return _ALL_X[_train_idx], _ALL_Y[_train_idx]
 
 
 def extract_features(fv: FeatureVector) -> np.ndarray:

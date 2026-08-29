@@ -25,7 +25,11 @@ def test_innovation_features():
     shadow = resp.json()
     print("Champion AUC:", shadow["champion"]["roc_auc"])
     print("Challenger AUC:", shadow["challenger"]["roc_auc"])
-    assert shadow["challenger"]["roc_auc"] > shadow["champion"]["roc_auc"]
+    print("Recommendation:", shadow["delta"]["recommendation"])
+    assert 0.5 < shadow["champion"]["roc_auc"] <= 1.0
+    assert 0.5 < shadow["challenger"]["roc_auc"] <= 1.0
+    assert "delta" in shadow
+    assert "recommendation" in shadow["delta"]
 
     print("\n--- 4. Testing Impossible Travel Detection in Risk Scoring ---")
     # First txn from Chennai
