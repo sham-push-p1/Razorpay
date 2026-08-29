@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api";
+import { IconZap, IconShield, IconTerminal, IconCheckCircle, IconAlertTriangle } from "./Icons";
 
 export default function AdaptiveAIBattle() {
   const [currentRound, setCurrentRound] = useState(1);
@@ -42,7 +43,8 @@ export default function AdaptiveAIBattle() {
             onClick={nextRound}
             disabled={loading}
           >
-            {loading ? "Evolving Attack..." : "⚡ Execute Next Evolutionary Attack"}
+            <IconZap size={14} />
+            <span>{loading ? "Evolving Attack..." : "Execute Next Evolutionary Attack"}</span>
           </button>
         </div>
       </div>
@@ -75,7 +77,10 @@ export default function AdaptiveAIBattle() {
           <div className="duel-box duel-box--attacker">
             <div className="duel-box-header">
               <div className="duel-agent-title">
-                <span className="agent-badge agent-badge--red">🤖 ADVERSARIAL ATTACKER AI</span>
+                <div className="agent-badge agent-badge--red">
+                  <IconTerminal size={13} />
+                  <span>ADVERSARIAL ATTACKER AI</span>
+                </div>
                 <span className="agent-gen">{battleData.attacker_generation}</span>
               </div>
               <span className="badge badge-block">ATTACK VECTOR</span>
@@ -99,7 +104,7 @@ export default function AdaptiveAIBattle() {
             </div>
 
             <div className="duel-learning-callout duel-learning-callout--attacker">
-              <span className="learning-icon">💡</span>
+              <IconAlertTriangle size={15} className="learning-icon" />
               <div>
                 <strong>Attacker AI Adaptation:</strong> {battleData.attacker_learning}
               </div>
@@ -115,11 +120,14 @@ export default function AdaptiveAIBattle() {
           <div className="duel-box duel-box--defender">
             <div className="duel-box-header">
               <div className="duel-agent-title">
-                <span className="agent-badge agent-badge--blue">🛡️ RAZORPAY SHIELD AI</span>
+                <div className="agent-badge agent-badge--blue">
+                  <IconShield size={13} />
+                  <span>RAZORPAY SHIELD AI</span>
+                </div>
                 <span className="agent-gen">{battleData.defense_layer_triggered}</span>
               </div>
               <span className={`badge ${battleData.decision === "BLOCK" ? "badge-block" : "badge-pass"}`}>
-                {battleData.decision === "BLOCK" ? "🚫 AUTONOMOUS BLOCK" : "🛡️ 2FA STEP-UP"}
+                {battleData.decision === "BLOCK" ? "AUTONOMOUS BLOCK" : "2FA STEP-UP"}
               </span>
             </div>
 
@@ -136,12 +144,12 @@ export default function AdaptiveAIBattle() {
               </div>
               <div className="spec-item">
                 <span className="spec-label">Evasion Neutralized:</span>
-                <span className="spec-val mono font-bold text-green">✓ 100% BLOCKED</span>
+                <span className="spec-val mono font-bold text-green">100% BLOCKED</span>
               </div>
             </div>
 
             <div className="duel-learning-callout duel-learning-callout--defender">
-              <span className="learning-icon">✨</span>
+              <IconCheckCircle size={15} className="learning-icon" />
               <div>
                 <strong>Shield AI Guarantee:</strong> Fraud evolves. Shield AI evolves faster. Threat hashes federated across all ecosystem merchants in &lt;5ms.
               </div>
@@ -152,3 +160,4 @@ export default function AdaptiveAIBattle() {
     </div>
   );
 }
+

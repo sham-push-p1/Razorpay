@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type DriftStatus } from "../lib/api";
+import { IconActivity, IconZap, IconAlertTriangle, IconCheckCircle } from "./Icons";
 
 export default function ModelDriftBanner() {
   const [drift, setDrift] = useState<DriftStatus>({
@@ -31,7 +32,7 @@ export default function ModelDriftBanner() {
     try {
       const d = await api.injectDrift("adversarial_velocity_shift");
       setDrift(d);
-      setToast("⚠️ Synthetic Adversary Drift Injected! PSI threshold breached.");
+      setToast("Synthetic Adversary Drift Injected! PSI threshold breached.");
       setTimeout(() => setToast(null), 3500);
     } catch (e: any) {
       alert(`Drift injection failed: ${e.message}`);
@@ -45,7 +46,7 @@ export default function ModelDriftBanner() {
     try {
       const d = await api.retrainModel();
       setDrift(d);
-      setToast("✓ Active Learning Retrain Complete! Gradient Boosting trees recalibrated.");
+      setToast("Active Learning Retrain Complete! Gradient Boosting trees recalibrated.");
       setTimeout(() => setToast(null), 3500);
     } catch (e: any) {
       alert(`Retrain failed: ${e.message}`);
@@ -67,7 +68,17 @@ export default function ModelDriftBanner() {
             <div className="drift-title-row">
               <span className="drift-title">MLOps Continuous Model Drift Telemetry</span>
               <span className={`badge ${isWarning ? "badge-block" : "badge-pass"}`}>
-                {isWarning ? "⚠️ DATA DRIFT DETECTED (ACTION REQUIRED)" : "🟢 POPULATION STABILITY: NOMINAL"}
+                {isWarning ? (
+                  <>
+                    <IconAlertTriangle size={12} />
+                    <span>DATA DRIFT DETECTED</span>
+                  </>
+                ) : (
+                  <>
+                    <IconCheckCircle size={12} />
+                    <span>POPULATION STABILITY: NOMINAL</span>
+                  </>
+                )}
               </span>
             </div>
             <p className="drift-sub">
@@ -84,7 +95,8 @@ export default function ModelDriftBanner() {
               onClick={handleInjectDrift}
               disabled={loading}
             >
-              🧪 Inject Synthetic Adversarial Drift
+              <IconActivity size={13} />
+              <span>Inject Synthetic Adversarial Drift</span>
             </button>
           ) : (
             <button
@@ -93,7 +105,8 @@ export default function ModelDriftBanner() {
               onClick={handleRetrain}
               disabled={loading}
             >
-              ⚡ Run Online Active Retrain Pipeline
+              <IconZap size={13} />
+              <span>Run Online Active Retrain Pipeline</span>
             </button>
           )}
         </div>
@@ -107,3 +120,4 @@ export default function ModelDriftBanner() {
     </div>
   );
 }
+

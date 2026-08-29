@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "../lib/api";
+import { IconLock, IconFileText } from "./Icons";
+
 
 export default function RiskDecisionLedger() {
   const [ledger, setLedger] = useState<any[]>([]);
@@ -59,10 +61,12 @@ export default function RiskDecisionLedger() {
               onClick={handleVerifyChain}
               disabled={verifying}
             >
-              {verifying ? "Auditing..." : "🔒 Audit Cryptographic Chain"}
+              <IconLock size={13} />
+              <span>{verifying ? "Auditing..." : "Audit Cryptographic Chain"}</span>
             </button>
             <span className="badge badge-pass font-bold">
-              📜 {ledger.length} AUDITED BLOCKS
+              <IconFileText size={12} />
+              <span>{ledger.length} AUDITED BLOCKS</span>
             </span>
           </div>
         </div>
@@ -72,7 +76,7 @@ export default function RiskDecisionLedger() {
         <div style={{ margin: "10px 0", padding: "10px 14px", borderRadius: "6px", background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
           <div className="flex-between">
             <span className="mono text-xs text-green font-bold">
-              ✓ SHA-256 Chain Audited: {auditStatus.total_blocks} Blocks Validated from Genesis (Tamper-Evident Standard: {auditStatus.compliance_standard})
+              SHA-256 Chain Audited: {auditStatus.total_blocks} Blocks Validated from Genesis (Tamper-Evident Standard: {auditStatus.compliance_standard})
             </span>
             <span className="mono text-xs text-dim">Latest Hash: {auditStatus.latest_hash?.slice(0, 16)}...</span>
           </div>
@@ -110,7 +114,7 @@ export default function RiskDecisionLedger() {
                 <tr key={item.ledger_id}>
                   <td className="mono text-xs font-bold">{item.ledger_id}</td>
                   <td className="mono text-xs text-dim" title={`Block: ${item.block_hash}\nPrev: ${item.prev_hash}`}>
-                    🔗 {item.block_hash ? item.block_hash.slice(0, 8) + "..." : "genesis"}
+                    {item.block_hash ? item.block_hash.slice(0, 8) + "..." : "genesis"}
                   </td>
                   <td className="mono text-xs text-blue">{item.tx_id}</td>
                   <td className="mono text-xs text-dim">{item.recorded_at}</td>
@@ -183,7 +187,7 @@ export default function RiskDecisionLedger() {
                 className="btn btn-primary"
                 onClick={() => handleExportJson(selectedEntry)}
               >
-                📥 Download Compliance JSON
+                Download Compliance JSON
               </button>
               <button
                 type="button"

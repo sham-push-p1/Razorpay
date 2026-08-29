@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import type { RiskScoreResponse } from "../lib/api";
+import { IconZap, IconLock, IconGraph, IconTerminal } from "./Icons";
+
+
 
 interface RazorpayHeroFlowProps {
   latest: RiskScoreResponse | null;
@@ -66,14 +69,16 @@ export default function RazorpayHeroFlow({
       {/* CTA Button Row with Live Auto-Stream Toggle */}
       <div className="hero-cta-row">
         <button className="btn-razorpay-primary" onClick={onRunQuickDemo}>
-          ⚡ Run Live Fraud Stress Test
+          <IconZap size={15} />
+          <span>Run Live Fraud Stress Test</span>
         </button>
         <button
           type="button"
           className={`btn-stream-toggle ${autoStream ? "btn-stream-toggle--active" : ""}`}
           onClick={handleToggleAutoStream}
         >
-          {autoStream ? "🔴 Streaming Live Traffic (Click to Pause)" : "▶️ Start Live Auto-Traffic Stream"}
+          <span className={`status-dot ${autoStream ? "status-dot--active" : "status-dot--idle"}`} />
+          <span>{autoStream ? "Streaming Live Traffic (Pause)" : "Start Live Traffic Stream"}</span>
         </button>
         <button className="btn-razorpay-secondary" onClick={onExploreConsole}>
           Open Risk Console ↓
@@ -132,7 +137,9 @@ export default function RazorpayHeroFlow({
         >
           <span className="flow-badge flow-badge--blue">ACQUIRE</span>
           <div className="floating-card floating-card--icon">
-            <div className="card-inner-icon">💳</div>
+            <div className="card-inner-icon">
+              <IconLock size={16} />
+            </div>
             <div className="card-text-group">
               <span className="card-label">Checkout Stream</span>
               <span className="card-val mono font-bold">₹{amount.toLocaleString("en-IN")}.00</span>
@@ -143,7 +150,7 @@ export default function RazorpayHeroFlow({
         {/* Node 2: Velocity & Feature Telemetry (Dynamic Count) */}
         <div key={`gift-${pulseKey}`} className="flow-node flow-node--gift flow-pulse-anim">
           <div className="floating-card floating-card--green-bundle">
-            <span className="bundle-icon">⚡</span>
+            <IconZap size={14} className="bundle-icon text-emerald" />
             <div className="bundle-subtext mono font-bold">
               Velocity: {velocity} req/90s
             </div>
@@ -184,16 +191,16 @@ export default function RazorpayHeroFlow({
                   }`}
                 >
                   {decision === "APPROVE" && "✓ "}
-                  {decision === "STEP-UP" && "🛡️ "}
-                  {decision === "BLOCK" && "🚫 "}
-                  {decision}
+                  {decision === "STEP-UP" && "STEP-UP "}
+                  {decision === "BLOCK" && "BLOCK "}
+                  {decision === "APPROVE" ? "APPROVED" : ""}
                 </span>
               </div>
             </div>
 
             <div className="center-card-footer">
               <span className="sub-model-info mono">
-                {latest?.is_degraded ? "⚠️ Degraded Fallback Mode" : "XGBoost ML · NetworkX Graph"}
+                {latest?.is_degraded ? "Degraded Fallback Mode" : "XGBoost ML · NetworkX Graph"}
               </span>
             </div>
           </div>
@@ -203,7 +210,7 @@ export default function RazorpayHeroFlow({
         <div key={`retain-${pulseKey}`} className="flow-node flow-node--retain flow-pulse-anim">
           <span className="flow-badge flow-badge--blue">RETAIN</span>
           <div className="floating-card floating-card--trust">
-            <span className="trust-icon">🔄</span>
+            <IconGraph size={15} className="trust-icon text-blue" />
             <div className="card-text-group">
               <span className="card-label">Trust Score</span>
               <span className={`card-val font-bold ${Number(trustScore) > 70 ? "text-green" : Number(trustScore) > 40 ? "text-amber" : "text-red"}`}>
@@ -225,11 +232,11 @@ export default function RazorpayHeroFlow({
               {decision === "STEP-UP" ? (
                 <>
                   <span className="mono auth-code font-bold">{otpCode}</span>
-                  <span className="badge badge-stepup font-bold">🛡️ 2FA Sent</span>
+                  <span className="badge badge-stepup font-bold">2FA Sent</span>
                 </>
               ) : decision === "BLOCK" ? (
                 <>
-                  <span className="mono text-red font-bold">🚫 QUARANTINED</span>
+                  <span className="mono text-red font-bold">QUARANTINED</span>
                   <span className="badge badge-block font-bold">Blocked</span>
                 </>
               ) : (
@@ -245,7 +252,7 @@ export default function RazorpayHeroFlow({
         {/* Node 5: Terminal Card (Dynamic Settlement Code) */}
         <div key={`terminal-${pulseKey}`} className="flow-node flow-node--terminal flow-pulse-anim">
           <div className="floating-card floating-card--pos">
-            <span className="pos-icon">📱</span>
+            <IconTerminal size={15} className="pos-icon text-slate" />
             <div className="pos-meta">
               <span className="pos-title">{decision === "BLOCK" ? "Declined" : decision === "STEP-UP" ? "Challenged" : "Settled"}</span>
               <span className={`pos-status mono font-bold ${

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IconSun, IconMoon } from "./Icons";
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -17,11 +18,22 @@ export default function ThemeToggle() {
   return (
     <button
       type="button"
-      className="theme-toggle-btn"
+      className="btn btn-ghost btn-sm theme-toggle-btn"
       onClick={toggleTheme}
       title={`Switch to ${theme === "light" ? "Cyber Dark" : "Razorpay Light"} mode`}
     >
-      {theme === "light" ? "🌙 Cyber Dark" : "☀️ Razorpay Light"}
+      {theme === "light" ? (
+        <>
+          <IconMoon size={14} />
+          <span>Cyber Dark</span>
+        </>
+      ) : (
+        <>
+          <IconSun size={14} />
+          <span>Light Mode</span>
+        </>
+      )}
     </button>
   );
 }
+

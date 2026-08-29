@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { api, type RiskScoreResponse } from "../lib/api";
+import { IconZap } from "./Icons";
+
 
 interface Step {
   stepNumber: number;
@@ -135,9 +137,11 @@ export default function DayInTheLifeReplay({ onStepExecuted }: Props) {
               onClick={handleNextStep}
               disabled={running}
             >
-              {running ? "Processing Step..." : "▶️ Play Next Lifecycle Step"}
+              <IconZap size={13} />
+              <span>{running ? "Processing Step..." : "Play Next Lifecycle Step"}</span>
             </button>
           </div>
+
         </div>
       </div>
 

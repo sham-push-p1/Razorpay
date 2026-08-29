@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, type CaseItem } from "../lib/api";
 import AnalystCopilot from "./AnalystCopilot";
+import { IconShield, IconActivity, IconAlertTriangle, IconCheckCircle, IconFileText } from "./Icons";
 
 export default function CaseManagement() {
   const [cases, setCases] = useState<CaseItem[]>([]);
@@ -57,13 +58,27 @@ export default function CaseManagement() {
     }
   };
 
+  const exportDossier = (c: any) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(c, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `threat_dossier_${c.case_id}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    setToastMessage(`Threat Dossier ${c.case_id} exported!`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   return (
     <div className="case-management-container">
       {toastMessage && <div className="floating-toast">{toastMessage}</div>}
 
       <div className="cases-header-bar">
         <div className="header-title-group">
-          <h2>🛡️ AI Case Investigation Workbench</h2>
+          <h2 style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <IconShield size={20} /> AI Case Investigation Workbench
+          </h2>
           <p className="header-sub">
             Real-time forensic investigation queue with Autonomous Agent Dossiers & Copilot Triage
           </p>
@@ -82,7 +97,7 @@ export default function CaseManagement() {
             ))}
           </div>
           <button className="btn btn-secondary btn-sm" onClick={fetchCases} disabled={loading}>
-            🔄 Refresh Cases
+            <IconActivity size={14} /> Refresh Cases
           </button>
         </div>
       </div>
@@ -118,18 +133,11 @@ export default function CaseManagement() {
                         {severity}
                       </span>
                     </div>
-
                     <div className="case-queue-item-meta">
+                      <div><span className="sub-label">User:</span> {c.user_id || "N/A"}</div>
                       <div><span className="sub-label">Tx:</span> <code>{c.tx_id}</code></div>
-                      <div><span className="sub-label">Amount:</span> ₹{c.amount?.toLocaleString()}</div>
-                      <div><span className="sub-label">Status:</span> <span className="status-highlight">{c.status.toUpperCase()}</span></div>
+                      <div><span className="sub-label">Amount:</span> ₹{(c.amount || 0).toLocaleString()}</div>
                     </div>
-
-                    {c.analyst_label && (
-                      <div className="case-queue-item-label">
-                        Tag: <strong>{c.analyst_label}</strong>
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -137,56 +145,55 @@ export default function CaseManagement() {
           )}
         </div>
 
-        {/* Center Column: Detailed Dossier */}
+        {/* Center Column: Autonomous Agent Dossier */}
         <div className="case-dossier-panel">
           {selectedCase ? (
             <div className="dossier-content">
               <div className="dossier-header">
                 <div>
                   <span className="eyebrow">AUTONOMOUS FORENSIC DOSSIER</span>
-                  <h3>Case: {selectedCase.case_id}</h3>
+                  <h3>Case {selectedCase.case_id}</h3>
                 </div>
-                <div className="dossier-badge-row">
-                  <span className={`badge-severity badge-severity--${(selectedCase.investigation_report?.severity || "medium").toLowerCase()}`}>
-                    {selectedCase.investigation_report?.severity || "MEDIUM"}
-                  </span>
-                  <span className="badge badge-type">
-                    AI Confidence: {Math.round((selectedCase.investigation_report?.confidence || 0.9) * 100)}%
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <button
+                    className="btn btn-secondary btn-xs"
+                    onClick={() => exportDossier(selectedCase)}
+                    title="Export full cryptographic threat dossier"
+                  >
+                    <IconFileText size={13} /> Export JSON
+                  </button>
+                  <span className={`badge-severity badge-severity--${(selectedCase.investigation_report?.severity || "MEDIUM").toLowerCase()}`}>
+                    {selectedCase.investigation_report?.severity || "MEDIUM"} PRIORITY
                   </span>
                 </div>
               </div>
 
-              {/* Summary Narrative */}
-              <div className="dossier-section dossier-summary-card">
-                <div className="section-title">🤖 Autonomous Agent Summary</div>
+              {/* Narrative Summary */}
+              <div className="dossier-summary-card">
+                <div className="section-title">Agent Triage Summary:</div>
                 <p className="narrative-text">
-                  {selectedCase.investigation_report?.summary || "No narrative generated."}
+                  {selectedCase.investigation_report?.summary || "No automated summary available."}
                 </p>
               </div>
 
-              {/* Evidence Items */}
+              {/* Forensic Evidence Points */}
               <div className="dossier-section">
-                <div className="section-title">🔍 Forensic Evidence Points</div>
-                {selectedCase.investigation_report?.evidence_items &&
-                selectedCase.investigation_report.evidence_items.length > 0 ? (
-                  <ul className="evidence-list">
-                    {selectedCase.investigation_report.evidence_items.map((ev, i) => (
-                      <li key={i} className="evidence-item">
-                        <span className="evidence-bullet">⚠</span>
-                        <span>{ev}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="empty-note">Standard risk score deviation signals captured.</p>
-                )}
+                <div className="section-title">Forensic Evidence Points:</div>
+                <ul className="evidence-list">
+                  {selectedCase.investigation_report?.evidence_items?.map((ev: string, i: number) => (
+                    <li key={i} className="evidence-item">
+                      <span className="evidence-bullet">•</span>
+                      <span>{ev}</span>
+                    </li>
+                  )) || <li className="empty-note">No key evidence flagged.</li>}
+                </ul>
               </div>
 
               {/* Recommended Actions */}
               <div className="dossier-section">
-                <div className="section-title">💡 Agent Recommended Actions</div>
+                <div className="section-title">Agent Recommended Actions:</div>
                 <div className="recommended-actions-grid">
-                  {selectedCase.investigation_report?.recommended_actions?.map((rec, i) => (
+                  {selectedCase.investigation_report?.recommended_actions?.map((rec: string, i: number) => (
                     <div key={i} className="rec-card">
                       <span className="rec-num">{i + 1}</span>
                       <span>{rec}</span>
@@ -203,19 +210,19 @@ export default function CaseManagement() {
                     className="btn btn-danger"
                     onClick={() => handleStatusChange(selectedCase.case_id, "resolved", "fraud_confirmed")}
                   >
-                    🚫 Confirm Fraud & Quarantine
+                    <IconAlertTriangle size={13} /> Confirm Fraud & Quarantine
                   </button>
                   <button
                     className="btn btn-warning"
                     onClick={() => handleStatusChange(selectedCase.case_id, "investigating", "step_up_enforced")}
                   >
-                    🛡️ Enforce 2FA Step-Up
+                    <IconShield size={13} /> Enforce 2FA Step-Up
                   </button>
                   <button
                     className="btn btn-success"
                     onClick={() => handleStatusChange(selectedCase.case_id, "resolved", "false_positive")}
                   >
-                    ✓ Mark Legitimate (Pardon)
+                    <IconCheckCircle size={13} /> Mark Legitimate (Pardon)
                   </button>
                 </div>
               </div>

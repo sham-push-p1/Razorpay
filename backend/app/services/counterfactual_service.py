@@ -2,10 +2,80 @@
 Counterfactual Explainability Engine.
 Computes actionable "What-If" feature interventions showing exactly how a decision can be flipped from BLOCK -> STEP-UP -> APPROVE.
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable, Optional
 
 
-class CounterfactualService:
+class CounterfactualEngine:
+    def __init__(self, fusion_fn: Optional[Callable[[Dict], float]] = None):
+        """
+        fusion_fn: feature_dict -> risk_score function.
+        """
+        self.fusion_fn = fusion_fn
+
+    def simulate(self, base_features: Dict, scenarios: Dict[str, Dict]) -> Dict:
+        """
+        base_features: the actual feature vector used for the real decision.
+        scenarios: {scenario_name: {feature_to_override: new_value, ...}, ...}
+        """
+        base_score = self._safe_score(base_features) if self.fusion_fn else float(base_features.get("score", 75.0))
+        results = []
+
+        for name, overrides in scenarios.items():
+            if self.fusion_fn:
+                perturbed = {**base_features, **overrides}
+                new_score = self._safe_score(perturbed)
+            else:
+                new_score = overrides.get("simulated_score", max(base_score - 25.0, 10.0))
+            delta = new_score - base_score
+            results.append({
+                "name": name,
+                "factor": name.replace("_", " ").title(),
+                "hypothesis": self._format_hypothesis(name),
+                "overridden_features": overrides,
+                "simulated_score": round(new_score, 1),
+                "simulated_decision": "APPROVE" if new_score <= 30 else ("STEP-UP" if new_score <= 70 else "BLOCK"),
+                "delta": round(delta, 1),
+                "summary": self._format_summary(name, base_score, new_score),
+            })
+
+        # Sort by biggest risk reduction first
+        results.sort(key=lambda r: r["delta"])
+
+        return {
+            "base_score": round(base_score, 1),
+            "current_score": round(base_score, 1),
+            "simulations": results,
+            "scenarios": results,
+            "recommended_resolution": "STEP-UP 2FA AUTHENTICATION" if base_score > 30 else "IMMEDIATE APPROVAL",
+            "explanation": f"Transaction score ({base_score}) can be flipped to APPROVE ({results[0]['simulated_score'] if results else base_score}) via verified intervention.",
+        }
+
+    def _safe_score(self, features: Dict) -> float:
+        try:
+            return float(self.fusion_fn(features)) if self.fusion_fn else 50.0
+        except Exception:
+            return 50.0
+
+    @staticmethod
+    def _format_hypothesis(name: str) -> str:
+        if "2fa" in name.lower():
+            return "If customer verifies dynamic out-of-band 2FA / biometric authentication"
+        if "device" in name.lower():
+            return "If customer completes transaction from a known trusted device with prior history"
+        if "velocity" in name.lower():
+            return "If request interval returns to typical human pace (>60s cadence)"
+        if "ring" in name.lower():
+            return "If account is disassociated from shared hardware cluster"
+        return f"If feature condition '{name}' is satisfied"
+
+    @staticmethod
+    def _format_summary(name: str, base: float, new: float) -> str:
+        base_pct = round(base)
+        new_pct = round(new)
+        arrow = "↓" if new < base else ("↑" if new > base else "→")
+        readable_name = name.replace("_", " ").replace("if ", "If ").capitalize()
+        return f"{readable_name}: risk {base_pct} {arrow} {new_pct}"
+
     def generate_counterfactuals(
         self,
         current_score: float,
@@ -14,51 +84,13 @@ class CounterfactualService:
         is_new_device: bool,
         velocity_count: int,
     ) -> Dict[str, Any]:
-        """
-        Generates actionable counterfactual intervention simulations.
-        """
-        simulations = []
-
-        # 1. Counterfactual: If device was trusted / recognized
-        if is_new_device or any("DEVICE" in r.get("code", "") for r in reason_codes):
-            reduced_score = max(5.0, current_score - 24.0)
-            simulations.append({
-                "factor": "Trusted Device Recognition",
-                "hypothesis": "If customer completes transaction from a known trusted device",
-                "simulated_score": round(reduced_score, 1),
-                "simulated_decision": "APPROVE" if reduced_score <= 30 else "STEP-UP",
-                "delta": -24.0,
-            })
-
-        # 2. Counterfactual: If transaction velocity was at normal baseline (1 req/min)
-        if velocity_count > 1 or any("VELOCITY" in r.get("code", "") for r in reason_codes):
-            reduced_score = max(8.0, current_score - 18.0)
-            simulations.append({
-                "factor": "Normalized Velocity Cadence",
-                "hypothesis": "If request interval returns to typical human pace (>60s)",
-                "simulated_score": round(reduced_score, 1),
-                "simulated_decision": "APPROVE" if reduced_score <= 30 else "STEP-UP",
-                "delta": -18.0,
-            })
-
-        # 3. Counterfactual: If Step-Up 2FA / Passkey challenge succeeds
-        reduced_score_2fa = max(12.0, min(28.0, current_score - 48.0))
-        simulations.append({
-            "factor": "Biometric / OTP Step-Up Success",
-            "hypothesis": "If customer verifies dynamic out-of-band 2FA authentication",
-            "simulated_score": round(reduced_score_2fa, 1),
-            "simulated_decision": "APPROVE",
-            "delta": round(reduced_score_2fa - current_score, 1),
-        })
-
-        recommended_action = "STEP-UP 2FA AUTHENTICATION" if current_score > 30 else "IMMEDIATE APPROVAL"
-
-        return {
-            "current_score": current_score,
-            "simulations": simulations,
-            "recommended_resolution": recommended_action,
-            "explanation": f"Transaction score ({current_score}) can be flipped to APPROVE ({simulations[-1]['simulated_score']}) via 2FA step-up verification.",
+        scenarios = {
+            "if_2fa_succeeds": {"simulated_score": max(12.0, min(28.0, current_score - 48.0))},
+            "if_device_trusted": {"simulated_score": max(8.0, current_score - 24.0)},
+            "if_velocity_normalized": {"simulated_score": max(10.0, current_score - 18.0)},
         }
+        return self.simulate({"score": current_score, "is_new_device": is_new_device, "velocity": velocity_count}, scenarios)
 
 
-counterfactual_service = CounterfactualService()
+counterfactual_service = CounterfactualEngine()
+

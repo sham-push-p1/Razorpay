@@ -96,6 +96,15 @@ body {
     linear-gradient(180deg, #edf4ff 0%, #f7faff 60%, #ffffff 100%);
   background-size: 28px 28px, 100% 100%;
   background-attachment: fixed;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+[data-theme="dark"] body {
+  background-color: #070d18;
+  background-image:
+    radial-gradient(#1e293b 1px, transparent 1px),
+    linear-gradient(180deg, #070d18 0%, #0c1524 60%, #0d1a2d 100%);
+  background-size: 28px 28px, 100% 100%;
 }
 
 #root {

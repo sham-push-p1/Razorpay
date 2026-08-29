@@ -7,6 +7,7 @@ import {
   type RiskScoreResponse,
   type Scenario,
 } from "./lib/api";
+import { soundFx } from "./lib/soundFx";
 import RazorpayHeroFlow from "./components/RazorpayHeroFlow";
 import RiskGauge from "./components/RiskGauge";
 import CheckoutForm from "./components/CheckoutForm";
@@ -35,7 +36,10 @@ import AdaptiveAIBattle from "./components/AdaptiveAIBattle";
 import GeoHeatmapAndShadow from "./components/GeoHeatmapAndShadow";
 import ExecutiveDashboard from "./components/ExecutiveDashboard";
 import RiskDecisionLedger from "./components/RiskDecisionLedger";
+import AutoPilotTour from "./components/AutoPilotTour";
+import { IconZap, IconGraph, IconShield, IconSliders, IconBarChart, IconLock } from "./components/Icons";
 import "./App.css";
+
 
 type TabView = "console" | "graph" | "cases" | "policy" | "analytics";
 
@@ -52,10 +56,18 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showPiiModal, setShowPiiModal] = useState(false);
   const [autoSimActive, setAutoSimActive] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(soundFx.enabled);
 
   const pollRef = useRef<number | null>(null);
   const autoSimRef = useRef<number | null>(null);
   const consoleRef = useRef<HTMLDivElement | null>(null);
+
+  const triggerSound = (decision: string) => {
+    if (decision === "BLOCK") soundFx.playBlock();
+    else if (decision === "STEP-UP") soundFx.playStepUp();
+    else soundFx.playApprove();
+  };
 
   const refreshMetrics = useCallback(async () => {
     try {
@@ -89,6 +101,7 @@ export default function App() {
           const res = await api.scoreTransaction(sample);
           setLatest(res);
           setEvents((prev) => [res, ...prev].slice(0, 50));
+          triggerSound(res.decision);
           refreshMetrics();
         } catch (e) {
           console.error("Auto sim error", e);
@@ -111,6 +124,7 @@ export default function App() {
       const result = await api.scoreTransaction(payload);
       setLatest(result);
       setEvents((prev) => [result, ...prev].slice(0, 50));
+      triggerSound(result.decision);
       refreshMetrics();
 
       if (result.decision === "STEP-UP") {
@@ -128,7 +142,9 @@ export default function App() {
     try {
       const res = await api.simulateAttack(scenario, count);
       const results = res.results;
-      setLatest(results[results.length - 1] ?? null);
+      const finalResult = results[results.length - 1] ?? null;
+      setLatest(finalResult);
+      if (finalResult) triggerSound(finalResult.decision);
       setEvents((prev) => [...results].reverse().concat(prev).slice(0, 50));
       refreshMetrics();
     } catch (err) {
@@ -147,6 +163,7 @@ export default function App() {
 
   const handleStepUpSuccess = () => {
     setStepUpTx(null);
+    soundFx.playApprove();
     setToastMessage(`✓ 2FA Challenge Passed! Transaction ${latest?.tx_id} successfully authorized.`);
     setTimeout(() => setToastMessage(null), 4000);
   };
@@ -154,8 +171,25 @@ export default function App() {
   const handleDayStepExecuted = (res: RiskScoreResponse) => {
     setLatest(res);
     setEvents((prev) => [res, ...prev].slice(0, 50));
+    triggerSound(res.decision);
     refreshMetrics();
   };
+
+  const handleTourStepAction = useCallback((stepIndex: number) => {
+    if (stepIndex === 0) {
+      setActiveTab("console");
+      handleSubmit(buildDemoCheckout());
+    } else if (stepIndex === 1) {
+      setActiveTab("console");
+      handleRunScenario("card_testing", 4);
+    } else if (stepIndex === 2) {
+      setActiveTab("graph");
+    } else if (stepIndex === 3) {
+      setActiveTab("cases");
+    } else if (stepIndex === 4) {
+      setActiveTab("analytics");
+    }
+  }, []);
 
   const scrollToConsole = () => {
     setActiveTab("console");
@@ -168,6 +202,13 @@ export default function App() {
     <div className="app-shell">
       {/* Floating Global Toast */}
       {toastMessage && <div className="floating-toast">{toastMessage}</div>}
+
+      {/* Auto-Pilot Pitch Tour Overlay */}
+      <AutoPilotTour
+        active={tourActive}
+        onClose={() => setTourActive(false)}
+        onStepAction={handleTourStepAction}
+      />
 
       {/* Top Navbar */}
       <header className="topbar">
@@ -190,43 +231,70 @@ export default function App() {
             className={`tab-btn ${activeTab === "console" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("console")}
           >
-            ⚡ Live Console
+            <IconZap size={14} />
+            <span>Live Console</span>
           </button>
           <button
             className={`tab-btn ${activeTab === "graph" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("graph")}
           >
-            🕸️ Fraud Rings & Graph
+            <IconGraph size={14} />
+            <span>Fraud Rings & Graph</span>
           </button>
           <button
             className={`tab-btn ${activeTab === "cases" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("cases")}
           >
-            🛡️ AI Cases & Copilot
+            <IconShield size={14} />
+            <span>AI Cases & Copilot</span>
           </button>
           <button
             className={`tab-btn ${activeTab === "policy" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("policy")}
           >
-            🎛️ Policy Studio
+            <IconSliders size={14} />
+            <span>Policy Studio</span>
           </button>
           <button
             className={`tab-btn ${activeTab === "analytics" ? "tab-btn--active" : ""}`}
             onClick={() => setActiveTab("analytics")}
           >
-            📊 Defense & ROI Analytics
+            <IconBarChart size={14} />
+            <span>Defense & ROI Analytics</span>
           </button>
         </nav>
 
         <div className="topbar-status">
+          <button
+            type="button"
+            className="autopilot-launch-btn"
+            onClick={() => setTourActive(true)}
+            title="Launch automated 60-second judge pitch demo"
+          >
+            <IconZap size={13} />
+            <span>60s Pitch Tour</span>
+          </button>
+
+          <button
+            type="button"
+            className="sound-toggle-btn"
+            onClick={() => setSoundEnabled(soundFx.toggle())}
+            title={soundEnabled ? "Mute audio sound FX" : "Unmute audio sound FX"}
+          >
+            {soundEnabled ? "🔊" : "🔇"}
+          </button>
+
           <ThemeToggle />
+
           <button
             type="button"
             className="btn btn-ghost btn-sm pii-btn"
             onClick={() => setShowPiiModal(true)}
           >
-            🔒 PII Privacy Proof
+            <IconLock size={13} />
+            <span>PII Privacy</span>
           </button>
+
           <span className={`status-dot ${connError ? "status-dot--down" : "status-dot--up"}`} />
           <span className="status-text mono">{connError ? "Offline" : "Shield Online"}</span>
         </div>
